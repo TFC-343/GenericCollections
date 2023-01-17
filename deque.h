@@ -8,30 +8,27 @@
 
 #define DEQUE_MAX_SIZE 50
 
-typedef struct internal_Partition{
-    int max_size;
+typedef struct Partition__{
+    int                max_size;
+    struct Partition__ *next;
+    bool               is_last;
+    struct Partition__ *prev;
+    bool               is_first;
+    int                top;
+    int                bottom;
+    void               **data;
+} Partition__, *pPartition__;
 
-    struct internal_Partition* next;
-    bool is_last;
-    struct internal_Partition* prev;
-    bool is_first;
+typedef struct Deque__{
+    pPartition__ start;
+    pPartition__ end;
 
-    int top;
-    int bottom;
+} Deque__, *pDeque;
 
-    void** data;
-} internal_Partition;
+typedef void *hDeque;
 
-typedef struct Deque{
-    internal_Partition* start;
-    internal_Partition* end;
-
-} Deque;
-
-typedef Deque* pDeque;
-
-internal_Partition* PartitionNew(int size_of_data, int bottom, int top){
-    internal_Partition* part = malloc(sizeof(internal_Partition));
+pPartition__ PartitionNew(int size_of_data, int bottom, int top){
+    pPartition__ part = malloc(sizeof(Partition__));
     part->max_size = DEQUE_MAX_SIZE;
 
     part->is_last = true;
@@ -45,109 +42,115 @@ internal_Partition* PartitionNew(int size_of_data, int bottom, int top){
     return part;
 }
 
-pDeque internal_DequeNew(int size_of_data){
-    internal_Partition* part = PartitionNew(size_of_data, DEQUE_MAX_SIZE / 2 - 1, DEQUE_MAX_SIZE / 2);
+hDeque DequeNew__(int size_of_data){
+    pPartition__ part = PartitionNew(size_of_data, DEQUE_MAX_SIZE / 2 - 1, DEQUE_MAX_SIZE / 2);
 
-    pDeque deck = malloc(sizeof(Deque));
+    pDeque deck = malloc(sizeof(Deque__));
     deck->start = part;
     deck->end = part;
 
-    return deck;
+    return (void *) deck;
 }
 
-#define DequeNew(T) (internal_DequeNew(sizeof(T)))
+#define DequeNew(T) (DequeNew__(sizeof(T)))
 
-void DequeFree(pDeque deck){
-    internal_Partition* current_part = deck->start;
+void DequeFree(hDeque deck){
+    pDeque deck_ = deck;
+    pPartition__ current_part = deck_->start;
     while (!current_part->is_last){
-        internal_Partition* next_part = current_part->next;
+        pPartition__ next_part = current_part->next;
         free(current_part->data);
         free(current_part);
         current_part = next_part;
     }
     free(current_part);
 
-    free(deck);
+    free(deck_);
 
 }
 
 #define DequePush(T, deck, new_data) { \
-    T* d = (T*)(deck)->end->data;      \
-    d[(deck)->end->top++] = new_data;  \
-    if ((deck)->end->top >= (deck)->end->max_size){ \
-        internal_Partition* new_part = PartitionNew(sizeof(T), 0, 0); \
-        new_part->prev = (deck)->end;  \
-        (deck)->end->is_last = false;  \
-        (deck)->end->next = new_part;  \
-        (deck)->end = new_part;        \
+    pDeque deck_ = deck;               \
+    T* d = (T*)(deck_)->end->data;     \
+    d[(deck_)->end->top++] = new_data; \
+    if ((deck_)->end->top >= (deck_)->end->max_size){ \
+        pPartition__ new_part = PartitionNew(sizeof(T), 0, 0); \
+        new_part->prev = (deck_)->end; \
+        (deck_)->end->is_last = false; \
+        (deck_)->end->next = new_part; \
+        (deck_)->end = new_part;       \
     };                                 \
 }
 
 #define DequePeak(T, deck) ({ \
+    pDeque deck_ = deck;      \
     T r;                      \
-    int indx = (deck)->end->top - 1; \
+    int indx = (deck_)->end->top - 1; \
     if (indx <= -1){          \
         /* indx will be -1 if current partition has no data, gets top of last partition */ \
-        r = ((T*)(deck)->end->prev->data)[(deck)->end->prev->top - 1]; \
+        r = ((T*)(deck_)->end->prev->data)[(deck_)->end->prev->top - 1]; \
     }                         \
     else{                     \
-         r = ((T*)(deck)->end->data)[indx]; \
+         r = ((T*)(deck_)->end->data)[indx]; \
     }                         \
     r;                        \
 })
 
 #define DequePop(T, deck) ({ \
+    pDeque deck_ = deck;     \
     T r;                     \
-    int indx = (deck)->end->top - 1; \
+    int indx = (deck_)->end->top - 1; \
     if (indx <= -1){         \
         /* indx will be -1 if current partition has no data, gets top of last partition */ \
-        r = ((T*)(deck)->end->prev->data)[(deck)->end->prev->top - 1]; \
-        (deck)->end->prev->is_last = true; \
-        (deck)->end = (deck)->end->prev; \
-        free((deck)->end->next); \
+        r = ((T*)(deck_)->end->prev->data)[(deck_)->end->prev->top - 1]; \
+        (deck_)->end->prev->is_last = true; \
+        (deck_)->end = (deck_)->end->prev; \
+        free((deck_)->end->next); \
     }                        \
     else{                    \
-         r = ((T*)(deck)->end->data)[--(deck)->end->top]; \
+         r = ((T*)(deck_)->end->data)[--(deck_)->end->top]; \
     }                        \
     r;                       \
 })
 
 #define DequePushLeft(T, deck, new_data) { \
-    T* d = (T*)(deck)->start->data;        \
-    d[(deck)->start->bottom--] = new_data; \
-    if ((deck)->start->bottom <= -1){      \
-        internal_Partition* new_part = PartitionNew(sizeof(T), DEQUE_MAX_SIZE - 1, DEQUE_MAX_SIZE - 1); \
-        new_part->next = (deck)->start;    \
-        (deck)->end->is_first = false;     \
-        (deck)->start->prev = new_part;    \
-        (deck)->start = new_part;          \
+    pDeque deck_ = deck;                   \
+    T* d = (T*)(deck_)->start->data;       \
+    d[(deck_)->start->bottom--] = new_data; \
+    if ((deck_)->start->bottom <= -1){     \
+        pPartition__ new_part = PartitionNew(sizeof(T), DEQUE_MAX_SIZE - 1, DEQUE_MAX_SIZE - 1); \
+        new_part->next = (deck_)->start;   \
+        (deck_)->end->is_first = false;    \
+        (deck_)->start->prev = new_part;   \
+        (deck_)->start = new_part;         \
     };                                     \
 }
 
 #define DequePeakLeft(T, deck) ({ \
+    pDeque deck_ = deck;          \
     T r;                          \
-    int indx = (deck)->start->bottom + 1; \
+    int indx = (deck_)->start->bottom + 1; \
     if (indx >= DEQUE_MAX_SIZE){  \
-        /* indx will be -1 if current partition has no data, gets top of last partition */ \
-        r = ((T*)(deck)->start->next->data)[(deck)->start->next->bottom + 1]; \
+        r = ((T*)(deck_)->start->next->data)[(deck_)->start->next->bottom + 1]; \
     }                             \
     else{                         \
-         r = ((T*)(deck)->start->data)[indx]; \
+         r = ((T*)(deck_)->start->data)[indx]; \
     }                             \
     r;                            \
 })
 
 #define DequePopLeft(T, deck) ({ \
+    pDeque deck_ = deck;         \
     T r;                         \
-    int indx = (deck)->start->bottom + 1; \
+    int indx = (deck_)->start->bottom + 1; \
     if (indx >= DEQUE_MAX_SIZE){ \
-        r = ((T*)(deck)->start->next->data)[(deck)->start->next->bottom + 1]; \
-        (deck)->start->next->is_first = true; \
-        (deck)->start = (deck)->start->next; \
-        free((deck)->start->prev); \
+        r = ((T*)(deck_)->start->next->data)[(deck_)->start->next->bottom + 1]; \
+        (deck_)->start->next->is_first = true; \
+        (deck_)->start = (deck_)->start->next; \
+        free((deck_)->start->prev); \
     }                            \
     else{                        \
-         r = ((T*)(deck)->start->data)[++(deck)->start->bottom]; \
+         r = ((T*)(deck_)->start->data)[++(deck_)->start->bottom]; \
     }                            \
     r;                           \
 })
