@@ -9,14 +9,14 @@
 #define DEQUE_MAX_SIZE 50
 
 typedef struct Partition__{
-    int                max_size;
-    struct Partition__ *next;
-    bool               is_last;
-    struct Partition__ *prev;
-    bool               is_first;
-    int                top;
-    int                bottom;
-    void               **data;
+    int                 max_size;
+    struct Partition__* next;
+    bool                is_last;
+    struct Partition__* prev;
+    bool                is_first;
+    int                 top;
+    int                 bottom;
+    void**              data;
 } Partition__, *pPartition__;
 
 typedef struct Deque__{
@@ -25,7 +25,7 @@ typedef struct Deque__{
 
 } Deque__, *pDeque;
 
-typedef void *hDeque;
+typedef void* hDeque;
 
 pPartition__ PartitionNew(int size_of_data, int bottom, int top){
     pPartition__ part = malloc(sizeof(Partition__));
@@ -54,7 +54,7 @@ hDeque DequeNew__(int size_of_data){
 
 #define DequeNew(T) (DequeNew__(sizeof(T)))
 
-void DequeFree(hDeque deck){
+void DequeFree__(hDeque deck){
     pDeque deck_ = deck;
     pPartition__ current_part = deck_->start;
     while (!current_part->is_last){
@@ -68,6 +68,8 @@ void DequeFree(hDeque deck){
     free(deck_);
 
 }
+
+#define DequeFree(deck) DequeFree__(deck)
 
 #define DequePush(T, deck, new_data) { \
     pDeque deck_ = deck;               \
