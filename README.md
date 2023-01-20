@@ -4,7 +4,7 @@ type-generic double-ended queue in c
 ## basic example
 
 ```c
-pDeque deck = DequeNew(double);
+hDeque deck = DequeNew(double);
 DequePush(double, deck, 1);
 DequePush(double, deck, 2);
 DequePushLeft(double, deck, 0);
